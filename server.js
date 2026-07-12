@@ -177,24 +177,28 @@ async function handleDownload(request, requestUrl, response) {
       '--no-progress',
       ...youtubeRuntimeArgs(),
       '--max-filesize', '750M',
-      '--format', 'bv*[height<=1080][vcodec^=avc1]+ba[ext=m4a]/bv*[height<=1080][ext=mp4]+ba[ext=m4a]/b[height<=1080][ext=mp4]/b[height<=1080]',
+      '--format', 'bv[height=1080]+ba[ext=m4a]/bv[height=1080]+ba/bv[height<=1080]+ba[ext=m4a]/bv[height<=1080]+ba/b[height<=1080]',
       '--merge-output-format', 'mp4',
       '--remux-video', 'mp4',
       '--output', path.join(tempDir, '%(id)s.%(ext)s'),
+      '--print', 'after_move:RESOLUTION:%(height)sp',
       '--print', 'after_move:filepath',
       youtubeUrl
     ], downloadTimeoutMs, abortController.signal);
 
-    const outputPath = output.trim().split(/\r?\n/).filter(Boolean).at(-1);
+    const outputLines = output.trim().split(/\r?\n/).filter(Boolean);
+    const outputPath = outputLines.find((line) => path.resolve(line).startsWith(path.resolve(tempDir)));
+    const resolution = outputLines.find((line) => line.startsWith('RESOLUTION:'))?.slice('RESOLUTION:'.length) || 'video';
     if (!outputPath || !path.resolve(outputPath).startsWith(path.resolve(tempDir))) {
       throw new Error('yt-dlp no devolvió un archivo válido.');
     }
     const stats = await fs.promises.stat(outputPath);
+    console.log(`Descarga preparada: ${resolution}, ${stats.size} bytes`);
 
     response.writeHead(200, {
       'Content-Type': 'video/mp4',
       'Content-Length': stats.size,
-      'Content-Disposition': `attachment; filename="${safeFilename(title)}.mp4"`,
+      'Content-Disposition': `attachment; filename="${safeFilename(title)} [${safeFilename(resolution)}].mp4"`,
       'Cache-Control': 'no-store',
       'X-Content-Type-Options': 'nosniff'
     });
