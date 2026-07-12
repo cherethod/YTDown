@@ -9,6 +9,7 @@ const host = process.env.HOST || '0.0.0.0';
 const root = __dirname;
 const maxConcurrentDownloads = Number(process.env.MAX_CONCURRENT_DOWNLOADS) || 2;
 const downloadTimeoutMs = Number(process.env.DOWNLOAD_TIMEOUT_MS) || 10 * 60 * 1000;
+const potProviderUrl = String(process.env.POT_PROVIDER_URL || '').replace(/\/$/, '');
 let activeDownloads = 0;
 const files = {
   '/': ['index.html', 'text/html; charset=utf-8'],
@@ -70,6 +71,17 @@ function canonicalYoutubeUrl(value) {
   return id ? `https://www.youtube.com/watch?v=${id}` : null;
 }
 
+function youtubeRuntimeArgs() {
+  const args = ['--js-runtimes', 'node'];
+  if (potProviderUrl) {
+    args.push(
+      '--extractor-args', `youtubepot-bgutilhttp:base_url=${potProviderUrl}`,
+      '--extractor-args', 'youtube:player_client=mweb'
+    );
+  }
+  return args;
+}
+
 async function handleInfo(requestUrl, response) {
   const youtubeUrl = canonicalYoutubeUrl(requestUrl.searchParams.get('url'));
   if (!youtubeUrl) {
@@ -81,7 +93,7 @@ async function handleInfo(requestUrl, response) {
     const output = await runYtDlp([
       '--no-playlist',
       '--no-warnings',
-      '--js-runtimes', 'node',
+      ...youtubeRuntimeArgs(),
       '--print', '%(title)s',
       '--print', '%(duration_string)s',
       '--skip-download',
@@ -119,7 +131,7 @@ async function handleDownload(request, requestUrl, response) {
     let title = 'video';
     try {
       title = (await runYtDlp([
-        '--no-playlist', '--no-warnings', '--js-runtimes', 'node',
+        '--no-playlist', '--no-warnings', ...youtubeRuntimeArgs(),
         '--print', '%(title)s', '--skip-download', youtubeUrl
       ])).trim().split(/\r?\n/)[0];
     } catch {
@@ -136,7 +148,7 @@ async function handleDownload(request, requestUrl, response) {
     child = spawn('yt-dlp', [
       '--no-playlist',
       '--no-warnings',
-      '--js-runtimes', 'node',
+      ...youtubeRuntimeArgs(),
       '--max-filesize', '500M',
       '--format', 'best[ext=mp4][height<=720]/best[height<=720]',
       '--output', '-',

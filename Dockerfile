@@ -1,10 +1,9 @@
 FROM node:24-bookworm-slim
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends ca-certificates curl ffmpeg \
-    && curl -fsSL --retry 3 https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_linux \
-      -o /usr/local/bin/yt-dlp \
-    && chmod a+rx /usr/local/bin/yt-dlp \
+    && apt-get install -y --no-install-recommends ca-certificates ffmpeg python3 python3-pip \
+    && python3 -m pip install --break-system-packages --no-cache-dir --upgrade \
+      "yt-dlp[default]" bgutil-ytdlp-pot-provider \
     && yt-dlp --version \
     && rm -rf /var/lib/apt/lists/*
 

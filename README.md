@@ -27,3 +27,5 @@ El contenedor incluye `yt-dlp` y `ffmpeg` y expone estas rutas:
 - `GET /api/download?url=...`: transmite un MP4 de hasta 720p y 500 MB.
 
 La descarga debe utilizarse únicamente con contenido propio, de dominio público, con licencia compatible o con permiso expreso. El backend limita las descargas concurrentes y no admite listas de reproducción.
+
+Para instalaciones en centros de datos donde YouTube exige comprobación anti-bot, el contenedor incluye el plugin `bgutil-ytdlp-pot-provider`. Define `POT_PROVIDER_URL` con la dirección privada del servicio proveedor, por ejemplo `http://pot-provider.railway.internal:4416`.
