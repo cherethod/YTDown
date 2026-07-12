@@ -1,6 +1,7 @@
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 const { spawn } = require('child_process');
 const { extractVideoId } = require('./logic');
 
@@ -40,28 +41,46 @@ function safeFilename(value) {
     .slice(0, 100) || 'video';
 }
 
-function runYtDlp(args, timeoutMs = 45_000) {
+function runYtDlp(args, timeoutMs = 45_000, signal) {
   return new Promise((resolve, reject) => {
     const child = spawn('yt-dlp', args, { windowsHide: true });
     let stdout = '';
     let stderr = '';
+    let settled = false;
+    const finish = (callback) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      signal?.removeEventListener('abort', abort);
+      callback();
+    };
+    const abort = () => {
+      child.kill('SIGKILL');
+      finish(() => reject(new Error('Descarga cancelada.')));
+    };
     const timer = setTimeout(() => {
       child.kill('SIGKILL');
-      reject(new Error('La operación tardó demasiado.'));
+      finish(() => reject(new Error('La operación tardó demasiado.')));
     }, timeoutMs);
+
+    if (signal?.aborted) {
+      abort();
+      return;
+    }
+    signal?.addEventListener('abort', abort, { once: true });
 
     child.stdout.setEncoding('utf8');
     child.stderr.setEncoding('utf8');
     child.stdout.on('data', (chunk) => { stdout += chunk; });
     child.stderr.on('data', (chunk) => { stderr += chunk; });
     child.on('error', (error) => {
-      clearTimeout(timer);
-      reject(error);
+      finish(() => reject(error));
     });
     child.on('close', (code) => {
-      clearTimeout(timer);
-      if (code === 0) resolve(stdout);
-      else reject(new Error(stderr.trim() || `yt-dlp terminó con código ${code}`));
+      finish(() => {
+        if (code === 0) resolve(stdout);
+        else reject(new Error(stderr.trim() || `yt-dlp terminó con código ${code}`));
+      });
     });
   });
 }
@@ -119,13 +138,26 @@ async function handleDownload(request, requestUrl, response) {
   }
 
   activeDownloads += 1;
-  let child;
+  const abortController = new AbortController();
+  let tempDir;
   let finished = false;
   const finish = () => {
     if (finished) return;
     finished = true;
     activeDownloads = Math.max(0, activeDownloads - 1);
   };
+  const cleanup = async () => {
+    if (tempDir) {
+      await fs.promises.rm(tempDir, { recursive: true, force: true }).catch(() => {});
+      tempDir = null;
+    }
+    finish();
+  };
+
+  request.on('aborted', () => abortController.abort());
+  response.on('close', () => {
+    if (!response.writableEnded) abortController.abort();
+  });
 
   try {
     let title = 'video';
@@ -138,52 +170,45 @@ async function handleDownload(request, requestUrl, response) {
       // La descarga todavía puede funcionar aunque falle la consulta del título.
     }
 
+    tempDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'ytdown-'));
+    const output = await runYtDlp([
+      '--no-playlist',
+      '--no-warnings',
+      '--no-progress',
+      ...youtubeRuntimeArgs(),
+      '--max-filesize', '750M',
+      '--format', 'bv*[height<=1080][vcodec^=avc1]+ba[ext=m4a]/bv*[height<=1080][ext=mp4]+ba[ext=m4a]/b[height<=1080][ext=mp4]/b[height<=1080]',
+      '--merge-output-format', 'mp4',
+      '--remux-video', 'mp4',
+      '--output', path.join(tempDir, '%(id)s.%(ext)s'),
+      '--print', 'after_move:filepath',
+      youtubeUrl
+    ], downloadTimeoutMs, abortController.signal);
+
+    const outputPath = output.trim().split(/\r?\n/).filter(Boolean).at(-1);
+    if (!outputPath || !path.resolve(outputPath).startsWith(path.resolve(tempDir))) {
+      throw new Error('yt-dlp no devolvió un archivo válido.');
+    }
+    const stats = await fs.promises.stat(outputPath);
+
     response.writeHead(200, {
       'Content-Type': 'video/mp4',
+      'Content-Length': stats.size,
       'Content-Disposition': `attachment; filename="${safeFilename(title)}.mp4"`,
       'Cache-Control': 'no-store',
       'X-Content-Type-Options': 'nosniff'
     });
 
-    child = spawn('yt-dlp', [
-      '--no-playlist',
-      '--no-warnings',
-      ...youtubeRuntimeArgs(),
-      '--max-filesize', '500M',
-      '--format', 'best[ext=mp4][height<=720]/best[height<=720]',
-      '--output', '-',
-      youtubeUrl
-    ], { windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
-
-    const timer = setTimeout(() => child.kill('SIGKILL'), downloadTimeoutMs);
-    child.stdout.pipe(response);
-    child.stderr.setEncoding('utf8');
-    child.stderr.on('data', (chunk) => console.error(chunk.trim()));
-    child.on('error', (error) => {
-      clearTimeout(timer);
-      console.error('No se pudo iniciar yt-dlp:', error.message);
-      if (!response.headersSent) sendJson(response, 500, { error: 'No se pudo iniciar la descarga.' });
-      else response.destroy(error);
-      finish();
-    });
-    child.on('close', (code) => {
-      clearTimeout(timer);
-      if (code !== 0 && !response.writableEnded) response.destroy();
-      finish();
-    });
-    request.on('aborted', () => {
-      if (child && !child.killed) child.kill('SIGTERM');
-      finish();
-    });
-    response.on('close', () => {
-      if (!response.writableEnded && child && !child.killed) child.kill('SIGTERM');
-      finish();
-    });
+    const fileStream = fs.createReadStream(outputPath);
+    fileStream.on('error', (error) => response.destroy(error));
+    response.on('finish', cleanup);
+    response.on('close', cleanup);
+    fileStream.pipe(response);
   } catch (error) {
     console.error('Error preparando la descarga:', error.message);
     if (!response.headersSent) sendJson(response, 500, { error: 'No se pudo preparar la descarga.' });
     else response.destroy(error);
-    finish();
+    await cleanup();
   }
 }
 

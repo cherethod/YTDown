@@ -24,7 +24,7 @@ El contenedor incluye `yt-dlp` y `ffmpeg` y expone estas rutas:
 
 - `GET /api/health`: comprueba que el servicio está disponible.
 - `GET /api/info?url=...`: consulta el título y la duración.
-- `GET /api/download?url=...`: transmite un MP4 de hasta 720p y 500 MB.
+- `GET /api/download?url=...`: prepara y transmite un MP4 de hasta 1080p y 750 MB.
 
 La descarga debe utilizarse únicamente con contenido propio, de dominio público, con licencia compatible o con permiso expreso. El backend limita las descargas concurrentes y no admite listas de reproducción.
 
