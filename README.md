@@ -18,4 +18,12 @@ Abre `http://127.0.0.1:4173`.
 npm run check
 ```
 
-La aplicación no extrae archivos de vídeo ni evita las protecciones de YouTube. El procesamiento del enlace se realiza en el navegador. La descarga offline depende de la disponibilidad de la función oficial de YouTube; los vídeos propios pueden descargarse desde YouTube Studio.
+## Backend de descarga
+
+El contenedor incluye `yt-dlp` y `ffmpeg` y expone estas rutas:
+
+- `GET /api/health`: comprueba que el servicio está disponible.
+- `GET /api/info?url=...`: consulta el título y la duración.
+- `GET /api/download?url=...`: transmite un MP4 de hasta 720p y 500 MB.
+
+La descarga debe utilizarse únicamente con contenido propio, de dominio público, con licencia compatible o con permiso expreso. El backend limita las descargas concurrentes y no admite listas de reproducción.
