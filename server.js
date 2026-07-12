@@ -95,7 +95,7 @@ function youtubeRuntimeArgs() {
   if (potProviderUrl) {
     args.push(
       '--extractor-args', `youtubepot-bgutilhttp:base_url=${potProviderUrl}`,
-      '--extractor-args', 'youtube:player_client=mweb,web_safari,android_vr'
+      '--extractor-args', 'youtube:player_client=mweb;player_skip=webpage'
     );
   }
   return args;
