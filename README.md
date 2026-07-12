@@ -31,3 +31,5 @@ La descarga debe utilizarse únicamente con contenido propio, de dominio públic
 La interfaz está configurada para usar `https://ytdown-production-a68a.up.railway.app` como backend de descarga.
 
 Para instalaciones en centros de datos donde YouTube exige comprobación anti-bot, el contenedor incluye el plugin `bgutil-ytdlp-pot-provider`. Define `POT_PROVIDER_URL` con la dirección privada del servicio proveedor, por ejemplo `http://pot-provider.railway.internal:4416`.
+
+Opcionalmente, `YOUTUBE_COOKIES_BASE64` puede contener un archivo Netscape de cookies codificado en Base64. El backend lo decodifica en almacenamiento temporal con permisos restringidos y activa los clientes autenticados de YouTube. Este secreto nunca debe guardarse en GitHub.

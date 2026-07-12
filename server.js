@@ -90,12 +90,32 @@ function canonicalYoutubeUrl(value) {
   return id ? `https://www.youtube.com/watch?v=${id}` : null;
 }
 
+function prepareYoutubeCookies() {
+  const encoded = String(process.env.YOUTUBE_COOKIES_BASE64 || '').trim();
+  if (!encoded) return null;
+
+  const content = Buffer.from(encoded, 'base64').toString('utf8').replace(/\r\n/g, '\n');
+  if (!content.startsWith('# Netscape HTTP Cookie File') && !content.startsWith('# HTTP Cookie File')) {
+    throw new Error('YOUTUBE_COOKIES_BASE64 no contiene un archivo de cookies Netscape válido.');
+  }
+
+  const cookiesPath = path.join(os.tmpdir(), 'youtube-cookies.txt');
+  fs.writeFileSync(cookiesPath, content, { encoding: 'utf8', mode: 0o600 });
+  console.log('Cookies de YouTube cargadas desde el secreto de Railway.');
+  return cookiesPath;
+}
+
+const youtubeCookiesPath = prepareYoutubeCookies();
+
 function youtubeRuntimeArgs() {
   const args = ['--js-runtimes', 'node'];
+  if (youtubeCookiesPath) args.push('--cookies', youtubeCookiesPath);
   if (potProviderUrl) {
     args.push(
       '--extractor-args', `youtubepot-bgutilhttp:base_url=${potProviderUrl}`,
-      '--extractor-args', 'youtube:player_client=mweb;player_skip=webpage'
+      '--extractor-args', youtubeCookiesPath
+        ? 'youtube:player_client=tv_downgraded,mweb'
+        : 'youtube:player_client=mweb;player_skip=webpage'
     );
   }
   return args;
