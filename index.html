@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#f5f2e9">
+  <meta name="description" content="Prepara vídeos educativos de YouTube para verlos sin conexión por las vías oficiales.">
+  <title>Aula Offline — Vídeos educativos, listos para clase</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://i.ytimg.com">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="#" aria-label="Aula Offline, inicio">
+      <span class="brand-mark" aria-hidden="true"><span></span></span>
+      <span>YTDownloader</span>
+    </a>
+    <nav aria-label="Navegación principal">
+      <a href="#como-funciona">Cómo funciona</a>
+      <a href="#uso-responsable">Uso responsable</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="eyebrow"><span></span> Visualiza tus vídeos offline</div>
+      <h1 id="hero-title">Tu contenido sin depender<br>de la <em>conexión.</em></h1>
+      <p class="hero-copy">Pega un vídeo y encuentra la forma oficial de guardarlo para verlo más tarde, con calma y sin distracciones.</p>
+
+      <form class="url-card" id="video-form" novalidate>
+        <label for="video-url">Enlace del vídeo de YouTube</label>
+        <div class="input-row">
+          <span class="youtube-icon" aria-hidden="true"><span></span></span>
+          <input id="video-url" name="video-url" type="url" inputmode="url" autocomplete="url" placeholder="https://youtube.com/watch?v=..." aria-describedby="form-hint form-error">
+          <button type="submit">Preparar vídeo <span aria-hidden="true">→</span></button>
+        </div>
+        <div class="form-meta">
+          <p id="form-hint"><span aria-hidden="true">●</span> Compatible con youtube.com, youtu.be y Shorts</p>
+          <button class="paste-button" id="paste-button" type="button">Pegar desde portapapeles</button>
+        </div>
+        <p class="form-error" id="form-error" role="alert" aria-live="polite"></p>
+      </form>
+
+      <div class="result-card" id="result" hidden aria-live="polite">
+        <div class="video-preview">
+          <img id="video-thumbnail" alt="Miniatura del vídeo seleccionado">
+          <span>Vídeo encontrado</span>
+        </div>
+        <div class="result-content">
+          <p class="result-kicker">Tu vídeo está listo</p>
+          <h2 id="video-title">Abrir opciones oficiales</h2>
+          <p>YouTube permite guardar vídeos sin conexión desde su aplicación cuando la función está disponible. Para vídeos propios, también puedes descargarlos desde YouTube Studio.</p>
+          <div class="result-actions">
+            <a id="open-youtube" class="button primary" target="_blank" rel="noopener noreferrer">Abrir en YouTube <span aria-hidden="true">↗</span></a>
+            <button id="copy-clean" class="button secondary" type="button">Copiar enlace limpio</button>
+          </div>
+          <div class="official-links">
+            <a href="https://support.google.com/youtube/answer/7381437?hl=es" target="_blank" rel="noopener noreferrer">Cómo ver vídeos offline</a>
+            <a href="https://support.google.com/youtube/answer/56100?hl=es" target="_blank" rel="noopener noreferrer">Descargar un vídeo propio</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="trust-row" aria-label="Ventajas">
+        <span><i>✓</i> Sin registro</span>
+        <span><i>✓</i> Privado: el enlace no sale de tu navegador</span>
+        <span><i>✓</i> Vías oficiales</span>
+      </div>
+    </section>
+
+    <section class="steps" id="como-funciona" aria-labelledby="steps-title">
+      <div class="section-heading">
+        <p>Simple por diseño</p>
+        <h2 id="steps-title">Del enlace a tu próxima lección.</h2>
+      </div>
+      <ol>
+        <li><span>01</span><div><h3>Pega el enlace</h3><p>Copia la URL de cualquier vídeo educativo o Short de YouTube.</p></div></li>
+        <li><span>02</span><div><h3>Comprueba el vídeo</h3><p>Verás su miniatura y un enlace limpio, sin parámetros de seguimiento.</p></div></li>
+        <li><span>03</span><div><h3>Guárdalo oficialmente</h3><p>Abre YouTube y usa «Descargar» si está disponible, o Studio si el vídeo es tuyo.</p></div></li>
+      </ol>
+    </section>
+
+    <section class="responsible" id="uso-responsable" aria-labelledby="responsible-title">
+      <div>
+        <p class="eyebrow"><span></span> Compartir también es respetar</p>
+        <h2 id="responsible-title">Contenido con permiso,<br>conocimiento sin límites.</h2>
+      </div>
+      <div class="responsible-copy">
+        <p>Usa YTDownloader solo con contenido propio, de dominio público, con licencia que permita la descarga o cuando tengas permiso expreso del creador.</p>
+        <p>La disponibilidad de la descarga depende de YouTube, del país, de la cuenta y de las decisiones del creador.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <a class="brand" href="#"><span class="brand-mark" aria-hidden="true"><span></span></span><span>YTDownloader</span></a>
+    <p>Una herramienta independiente. No afiliada a YouTube ni Google.</p>
+    <p>© <span id="year"></span></p>
+  </footer>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="/logic.js" defer></script>
+  <script src="/app.js" defer></script>
+</body>
+</html>
