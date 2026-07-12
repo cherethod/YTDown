@@ -95,7 +95,7 @@ function youtubeRuntimeArgs() {
   if (potProviderUrl) {
     args.push(
       '--extractor-args', `youtubepot-bgutilhttp:base_url=${potProviderUrl}`,
-      '--extractor-args', 'youtube:player_client=mweb'
+      '--extractor-args', 'youtube:player_client=mweb,web_safari,android_vr'
     );
   }
   return args;
@@ -113,13 +113,23 @@ async function handleInfo(requestUrl, response) {
       '--no-playlist',
       '--no-warnings',
       ...youtubeRuntimeArgs(),
-      '--print', '%(title)s',
-      '--print', '%(duration_string)s',
       '--skip-download',
+      '--dump-single-json',
       youtubeUrl
     ]);
-    const [title, duration] = output.trim().split(/\r?\n/);
-    sendJson(response, 200, { title, duration, url: youtubeUrl });
+    const info = JSON.parse(output);
+    const availableResolutions = [...new Set(
+      (info.formats || [])
+        .filter((format) => format.vcodec && format.vcodec !== 'none' && Number.isFinite(format.height))
+        .map((format) => format.height)
+    )].sort((a, b) => b - a);
+    sendJson(response, 200, {
+      title: info.title,
+      duration: info.duration_string,
+      availableResolutions,
+      maxResolution: availableResolutions[0] ? `${availableResolutions[0]}p` : null,
+      url: youtubeUrl
+    });
   } catch (error) {
     console.error('No se pudo consultar el vídeo:', error.message);
     sendJson(response, 502, { error: 'No se pudo obtener la información del vídeo.' });
