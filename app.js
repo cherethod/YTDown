@@ -3,13 +3,14 @@ const input = document.querySelector('#video-url');
 const error = document.querySelector('#form-error');
 const result = document.querySelector('#result');
 const thumbnail = document.querySelector('#video-thumbnail');
-const openYoutube = document.querySelector('#open-youtube');
+const downloadVideo = document.querySelector('#download-video');
 const copyButton = document.querySelector('#copy-clean');
 const pasteButton = document.querySelector('#paste-button');
 const toast = document.querySelector('#toast');
 
 let cleanUrl = '';
 let toastTimer;
+const backendUrl = 'https://ytdown-production-a68a.up.railway.app';
 const { extractVideoId } = window.AulaOffline;
 
 function showToast(message) {
@@ -34,7 +35,7 @@ function prepareVideo(value) {
   input.removeAttribute('aria-invalid');
   input.value = cleanUrl;
   thumbnail.src = `https://i.ytimg.com/vi/${id}/hqdefault.jpg`;
-  openYoutube.href = cleanUrl;
+  downloadVideo.href = `${backendUrl}/api/download?url=${encodeURIComponent(cleanUrl)}`;
   result.hidden = false;
   result.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
